@@ -304,10 +304,21 @@ function KeystoneRest() {
       middleware: middleware,
       route: '/api/' + collectionName + '/:' + paramName,
       handler: function (req, res, next) {
-        var populated = req.query.populate ? req.query.populate.split(',') : [];
+        // new code for get request by _id
+        var modelId = req.params[paramName];
+        if(modelId && modelId.length > 0) {
+          Model.findById(modelId).exec(function(err, result){
+            if (err && err.type !== 'ObjectId') { return _sendError(err, req, res, next); }
+            if (!result) { return _send404(res, 'Could not find ' + Model.collection.name.toLowerCase() + ' with id ' + modelId); }
+            res.json(result);
+          });
+        } else {
+          return _send404(res, 'Could not find id in request');
+        }
+        // old original code was not working properly for newly created objects
+      /*  var populated = req.query.populate ? req.query.populate.split(',') : [];
         var criteria = {};
         var querySelect;
-
         if (req.query.select) {
           querySelect = req.query.select.split(',');
           querySelect = querySelect.filter(function (field) {
@@ -326,12 +337,14 @@ function KeystoneRest() {
             select: _getSelected(mongoose.model(_getRefName(Model, path)).schema)
           });
         });
-
-        query.exec(function (err, result) {
+         query.exec(function (err, result) {
+          console.log('query result:', result);
+          console.log('query error:', result);
           if (err && err.type !== 'ObjectId') { return _sendError(err, req, res, next); }
           if (!result) { return _send404(res, 'Could not find ' + Model.collection.name.toLowerCase() + ' with id ' + req.params.id); }
           res.json(result);
         });
+      */
       }
     });
   };
